@@ -1,0 +1,140 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2706
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 Times-Roman;\f1\fnil\fcharset0 HelveticaNeue;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue233;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c93333;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww34360\viewh21600\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs24 \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 package com.mycompany.echo.AllTasksAndServices;\
+\
+import com.fasterxml.jackson.core.JsonProcessingException;\
+import com.fasterxml.jackson.databind.ObjectMapper;\
+import com.microsoft.bot.builder.MessageFactory;\
+import com.microsoft.bot.builder.TurnContext;\
+import com.microsoft.bot.schema.Activity;\
+import com.microsoft.bot.schema.Attachment;\
+import org.springframework.stereotype.Component;\
+\
+import java.util.HashMap;\
+import java.util.Map;\
+\
+\
+@Component\
+public class BuildJobForm \{\
+private String getAdaptiveCardJson() \{\
+String adaptiveCardJson= "\{\\n" +\
+" \\"type\\": \\"AdaptiveCard\\",\\n" +\
+" \\"body\\": [\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"TextBlock\\",\\n" +\
+" \\"text\\": \\"Build Jenkins Job\\",\\n" +\
+" \\"weight\\": \\"Bolder\\",\\n" +\
+" \\"size\\": \\"Medium\\"\\n" +\
+" \},\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Input.Text\\",\\n" +\
+" \\"id\\": \\"job_name\\",\\n" +\
+" \\"placeholder\\": \\"JOB_NAME\\"\\n" +\
+" \},\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Input.Text\\",\\n" +\
+" \\"id\\": \\"chart_name\\",\\n" +\
+" \\"placeholder\\": \\"CHART_NAME\\"\\n" +\
+" \},\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Input.Text\\",\\n" +\
+" \\"id\\": \\"chart_release_name\\",\\n" +\
+" \\"placeholder\\": \\"CHART_RELEASE_NAME\\"\\n" +\
+" \},\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Input.Text\\",\\n" +\
+" \\"id\\": \\"branch\\",\\n" +\
+" \\"placeholder\\": \\"CHART_REPO_BRANCH\\"\\n" +\
+" \},\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Input.Text\\",\\n" +\
+" \\"id\\": \\"mode\\",\\n" +\
+" \\"placeholder\\": \\"JOB_MODE\\"\\n" +\
+" \}\\n" +\
+" ],\\n" +\
+" \\"actions\\": [\\n" +\
+" \{\\n" +\
+" \\"type\\": \\"Action.Submit\\",\\n" +\
+" \\"title\\": \\"Build\\"\\n" +\
+" \}\\n" +\
+" ],\\n" +\
+" \\"$schema\\": \\"{\field{\*\fldinst{HYPERLINK "http://adaptivecards.io/schemas/adaptive-card.json"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 http://adaptivecards.io/schemas/adaptive-card.json}}\\",\\n" +\
+" \\"version\\": \\"1.5\\"\\n" +\
+"\}";\
+\
+return adaptiveCardJson;\
+\
+\}\
+public void getForm(TurnContext turnContext)\{\
+Attachment cardAttachment = new Attachment();\
+cardAttachment.setContentType("application/vnd.microsoft.card.adaptive");\
+try \{\
+cardAttachment.setContent(new ObjectMapper().readTree(getAdaptiveCardJson()));\
+\} catch (JsonProcessingException e) \{\
+throw new RuntimeException(e);\
+\}\
+\
+// cardAttachment.setContent(JsonNodeFactory.instance.textNode(getAdaptiveCardJson()));\
+\
+Activity reply = MessageFactory.attachment(cardAttachment);\
+Map<String, Object> channelData = new HashMap<>();\
+channelData.put("isAdaptiveCard", true);\
+reply.setChannelData(channelData);\
+\
+// Send the reply\
+turnContext.sendActivity(reply).thenApply(resourceResponse -> null);\
+\}\
+\}\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \strokec2 [1:36 pm] Praveen Kumar\
+\pard\pardeftab720\sa280\partightenfactor0
+\cf0 package com.mycompany.echo.AllTasksAndServices;\uc0\u8232 \u8232 \
+import com.microsoft.bot.builder.TurnContext;\
+import org.springframework.beans.factory.annotation.Autowired;\
+import org.springframework.stereotype.Component;\uc0\u8232 \
+import java.sql.SQLOutput;\
+import java.util.Map;\uc0\u8232 \
+@Component\
+public class ReceiveBuildParameters \{\uc0\u8232 \
+@Autowired\
+JenkinJobBuild jenkinJobBuild;\uc0\u8232 \
+public String getReceive(TurnContext turnContext) \{\
+String message= "failed to trigger";\
+if (turnContext.getActivity().getValue() != null) \{\
+Object value = turnContext.getActivity().getValue();\
+if (value instanceof Map) \{\
+Map<?, ?> mapData = (Map<?, ?>) value;\uc0\u8232 \
+// Extract the values of input1 and input2\
+String job_name = (String) mapData.get("job_name");\
+String chart_name = (String) mapData.get("chart_name");\
+String chart_release_name = (String) mapData.get("chart_release_name");\
+String branch = (String) mapData.get("branch");\
+String mode = (String) mapData.get("mode");\
+try \{\
+message = jenkinJobBuild.triggerJob(job_name, chart_name, chart_release_name, branch, mode, turnContext);\
+\} catch (InterruptedException e) \{\
+throw new RuntimeException(e);\
+\}\
+\}\
+\}\uc0\u8232 \
+return message;\
+\}\
+\}\
+}
