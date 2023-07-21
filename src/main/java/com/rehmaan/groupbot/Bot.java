@@ -47,8 +47,8 @@ public class Bot extends TeamsActivityHandler {
     private String appId;
     private String appPassword;
     public Bot(Configuration configuration ) {
-        appId= "967c973b-c486-4d38-968a-3d964800821b";
-        appPassword = "V4B8Q~R2zD6E~qs7oSCMVvWpK5lX~dkNx4nrWchl";
+        appId= "bot app Id";
+        appPassword = "bot app password";
     }
 
     private static CardAction createButton(String title, String text) {
