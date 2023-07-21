@@ -37,8 +37,8 @@ import java.util.*;
 public class AuthController {
     private static String channelReadingStatusIndex = IndexNames.getChannelReadingStatusIndexName();
     private static HashMap<String, String> AuthCodes = new HashMap<>();
-    private static String clientId = "967c973b-c486-4d38-968a-3d964800821b";
-    private static String clientSecret= "V4B8Q~R2zD6E~qs7oSCMVvWpK5lX~dkNx4nrWchl";
+    private static String clientId = "client id";
+    private static String clientSecret= "client secret";
 
 
     @GetMapping("/auth")
