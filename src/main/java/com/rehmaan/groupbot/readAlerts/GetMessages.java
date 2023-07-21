@@ -42,8 +42,8 @@ import java.util.List;
 public class GetMessages {
     private static String channelReadingStatusIndex = IndexNames.getChannelReadingStatusIndexName();
 
-    private static String clientId = "967c973b-c486-4d38-968a-3d964800821b";
-    private static String clientSecret = "V4B8Q~R2zD6E~qs7oSCMVvWpK5lX~dkNx4nrWchl";
+    private static String clientId = "client_id";
+    private static String clientSecret = "client_secret";
 
 
     /**
