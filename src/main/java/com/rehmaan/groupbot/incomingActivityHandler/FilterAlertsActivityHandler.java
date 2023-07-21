@@ -9,18 +9,37 @@ import com.rehmaan.groupbot.database.ESClient;
 import com.rehmaan.groupbot.database.FilterAlertsQueries;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+
+/**
+ * A class that handles filtering alerts.
+ *
+ * @author mohammad rehmaan
+ */
 
 @Component
 public class FilterAlertsActivityHandler {
     @Autowired
     ESClient esClient;
+
+    /**
+     * Sends a message to the user with filtered alerts based on the specified field, value, and days.
+     *
+     * @param turnContext The turn context.
+     * @param field The field to filter alerts by.
+     * @param value The value of the field to filter alerts by.
+     * @param days The number of days to filter alerts by.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendFilteredAlerts(TurnContext turnContext, String field, String value, int days, String channelId) {
         List<JSONObject> result = null;
         if(field.equals("environment")) {
@@ -62,6 +81,16 @@ public class FilterAlertsActivityHandler {
         return turnContext.sendActivity(createReplyActivity(result, field, value, days)).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Creates an activity that contains a table of the filtered alerts.
+     *
+     * @param result The list of filtered alerts.
+     * @param field The field that was filtered on.
+     * @param value The value of the field that was filtered on.
+     * @param days The number of days that were filtered on.
+     * @return The activity.
+     */
     private Activity createReplyActivity(List<JSONObject> result, String field, String value, int days) {
         // go in esclient and sort the function
         StringBuilder replyBuilder = new StringBuilder();
@@ -92,76 +121,35 @@ public class FilterAlertsActivityHandler {
     }
 
 
-    public CompletableFuture<Void> sendFilterForm(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Filter Alert Form\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.ChoiceSet\",\n" +
-                " \"id\": \"field\",\n" +
-                " \"placeholder\": \"Field_Name\",\n" +
-                " \"choices\": [ {\"title\" : \"Environment\", \"value\" : \"environment\"},\n" +
-                "                 {\"title\" : \"Partner Id\", \"value\" : \"partnerId\"},\n" +
-                "                 {\"title\" : \"StackTrace keywords\", \"value\" : \"stackTrace\"},\n" +
-                "                 {\"title\" : \"Service\", \"value\" : \"service\"}\n" +
-                "               ]\n," +
-                " \"isRequired\": true,\n" +
-                " \"errorMessage\": \"Field cannot be empty\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"value\",\n" +
-                " \"isRequired\" : true,\n"+
-                " \"errorMessage\": \"Value cannot be empty\",\n" +
-                " \"placeholder\": \"Value\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Number\",\n" +
-                " \"id\": \"days\",\n" +
-                " \"placeholder\": \"Number_of_days\",\n" +
-                " \"isRequired\" : true,\n"+
-                " \"errorMessage\": \"Value cannot be empty\"\n" +
-                " }],\n"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
-
+    /**
+     * Sends a filter form to the user to allow them to filter alerts.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
+    public static CompletableFuture<Void> sendFilterForm(TurnContext turnContext) {
+        String adaptiveCardJson= ReadFiles.readFileAsString("src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/FilterAlertsAdaptiveCards/inputForm.json");
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
 
+    /**
+     * Sends an adaptive card to the user that replaces the form
+     *
+     * @param field The field that was filtered on.
+     * @param value The value of the field that was filtered on.
+     * @param days The number of days that were filtered on.
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard(String field, String value, int days) {
         String cardText = "CodeAlertBot 🤖 showing Alerts for the last " + days + " days having " + field + " value = " + value;
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
+
+
 
 
 }

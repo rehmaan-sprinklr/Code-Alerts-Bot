@@ -13,13 +13,19 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
+
+
+/**
+ * A class that schedule and sends notification to owners of alert
+ *
+ * @author mohammad rehmaan
+ */
 
 @Component
 public class NotificationScheduler {
@@ -38,14 +44,23 @@ public class NotificationScheduler {
             return id;
         }
 
-        else if(text.contains("esId:")) {
-            int left = text.indexOf("esId:") + "esId:".length();
+        else if(text.contains("Id:")) {
+            int left = text.indexOf("Id:") + "Id:".length();
             int right = left + lengthOfEsId;
             String id = text.substring(left, right);
             return id;
         }
         throw new Exception("invalid input given by user");
     }
+
+    /**
+     * Sends a notification to the owners of the alert.
+     *
+     * @param turnContext The turn context.
+     * @param idUserInput The user input.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that will be completed when the notification has been sent.
+     */
     public CompletableFuture<Void> sendNotification(TurnContext turnContext, String idUserInput, String channelId) {
         String id= null;
         try {
@@ -61,7 +76,7 @@ public class NotificationScheduler {
 
         try{
             JSONObject alert = null;
-            if(idUserInput.contains("esId:")) {
+            if(idUserInput.contains("Id:")) {
                 alert = CommonQueries.getByESId(id, channelId);
             }
             else {
@@ -92,10 +107,10 @@ public class NotificationScheduler {
                );
                mentions.add(mention);
            }
-           stringBuilder.append("Hello everyone! tagged people please look into the following alert \n");
-           stringBuilder.append("\n" + "<a href=\""+ messageUrl + "\">Alert link</a>\n");
+           stringBuilder.append("🔔🔔Hello everyone! tagged people please look into the following alert \n");
+           stringBuilder.append("\n" + "<a href=\""+ messageUrl + "\">Alert link</a><br>\n");
            for(Mention mention : mentions) {
-               stringBuilder.append(mention.getText() + " ");
+               stringBuilder.append(mention.getText() + " <br>");
            }
 
            Activity replyActivity = MessageFactory.text(stringBuilder.toString());
@@ -109,6 +124,18 @@ public class NotificationScheduler {
         return CompletableFuture.completedFuture((Void) null);
     }
 
+
+    /**
+     * Schedules a notification to be sent to the owners of the alert.
+     *
+     * @param turnContext The turn context.
+     * @param messageUrl The message URL.
+     * @param channelId The channel ID.
+     * @param durationInMinutes The duration gap of the notification in minutes.
+     * @param count The number of times the notification should be sent.
+     * @param appId The app ID.
+     * @return A CompletableFuture that will be completed when the notification has been scheduled.
+     */
     public CompletableFuture<Void> scheduleNotification(TurnContext turnContext, String messageUrl, String channelId, int durationInMinutes, int count, String appId) {
         int inMilliSeconds = durationInMinutes*60*1000;
         for(int i=1; i <= count; i++) {
@@ -132,61 +159,32 @@ public class NotificationScheduler {
         return turnContext.sendActivity(MessageFactory.text("Owners of this alert will be Notified after the scheduled time"))
                 .thenApply(resourceResponse -> null);
     }
+
+
+
+    /**
+     * Sends a form to the user to allow them to schedule a notification.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendNotificationInputForm(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Notification scheduler form\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"messageUrl\",\n" +
-                " \"placeholder\": \"MESSAGE_URL\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"count\",\n" +
-                " \"placeholder\": \"COUNT_OF_NOTIFICATION\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"time\",\n" +
-                " \"placeholder\": \"TIME_IN_MINUTES\"\n" +
-                " }],"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/notificationSchedulerAdaptiveCards/inputForm.json";
+        String adaptiveCardJson= ReadFiles.readFileAsString(filePath);
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Sends an adaptive card to the user to notify them that the notification has been scheduled successfully.
+     *
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard() {
         String cardText = "CodeAlertBot 🤖 : Notification scheduled Success ✅✅";
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
 }

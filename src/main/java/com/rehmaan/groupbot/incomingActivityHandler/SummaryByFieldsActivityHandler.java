@@ -11,55 +11,45 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+
+/**
+ * A class that handles generating summary commands
+ *
+ * @author mohammad rehmaan
+ */
 
 @Component
 public class SummaryByFieldsActivityHandler {
 
     @Autowired
     ESClient esClient;
+
+    /**
+     * Sends a form to the user to collect information about the summary they want to generate.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendFormForSummary(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Generate Summary Based On a Specific Field different values form\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\",\n" +
-                " \"wrap\": true"+
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.ChoiceSet\",\n" +
-                " \"id\": \"field\",\n" +
-                " \"placeholder\": \"Field_Name\",\n" +
-                " \"choices\": [ {\"title\" : \"Environment\", \"value\" : \"environment\"},\n" +
-                "                 {\"title\" : \"Partner Id\", \"value\" : \"partnerId\"},\n" +
-                "                 {\"title\" : \"Host Info\", \"value\" : \"hostInfo\"}\n" +
-                "               ]\n," +
-                " \"isRequired\": true,\n" +
-                " \"errorMessage\": \"Field cannot be empty\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Number\",\n" +
-                " \"id\": \"days\",\n" +
-                " \"placeholder\": \"Number_of_days\"\n" +
-                " }],"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/summaryByFieldsAdaptiveCards/inputForm.json";
+        String adaptiveCardJson= ReadFiles.readFileAsString(filePath);
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Sends a summary of unresolved alerts to the user based on the field and number of days specified.
+     *
+     * @param field The field to filter the alerts by.
+     * @param channelId The channel ID.
+     * @param days The number of days to filter the alerts by.
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendSummary(String field, String channelId, int days, TurnContext turnContext) {
         List<JSONObject> result = null;
         if(field.equals("environment")) {
@@ -92,6 +82,15 @@ public class SummaryByFieldsActivityHandler {
         return turnContext.sendActivity(createReplyActivity(result, field, days)).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Creates an adaptive card that summarizes the unresolved alerts based on the field and number of days specified.
+     *
+     * @param result The list of alerts to summarize.
+     * @param field The field to filter the alerts by.
+     * @param days The number of days to filter the alerts by.
+     * @return The adaptive card.
+     */
     private Activity createReplyActivity(List<JSONObject> result, String field, int days) {
         // count, messageUrl, field value, priority
         StringBuilder replyBuilder = new StringBuilder();
@@ -100,7 +99,7 @@ public class SummaryByFieldsActivityHandler {
         replyBuilder.append(
                 "<tr><td><strong>" + field + "</strong></td>" +
                         "<td><strong>Latest Alert</strong></td>" +
-                        "<td><strong>Count</strong></td>" +
+                        "<td><strong>Count of unique Alerts</strong></td>" +
                         "<td><strong>Priority</strong></td></tr>"
         );
         int currentIndex = 1;
@@ -123,24 +122,18 @@ public class SummaryByFieldsActivityHandler {
         return reply;
     }
 
+    /**
+     * sends an activity that replaces the form after it has been submitted
+     *
+     * @param field The field that was used to filter the alerts.
+     * @param days The number of days that were used to filter the alerts.
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard(String field, int days) {
         String cardText = "CodeAlertBot 🤖 showing Alerts Summary for the last " + days + " days for different values of " + field;
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
 
 }

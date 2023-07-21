@@ -46,7 +46,7 @@ public class Bot extends TeamsActivityHandler {
 
     private String appId;
     private String appPassword;
-    public Bot(Configuration configuration) {
+    public Bot(Configuration configuration ) {
         appId= "967c973b-c486-4d38-968a-3d964800821b";
         appPassword = "V4B8Q~R2zD6E~qs7oSCMVvWpK5lX~dkNx4nrWchl";
     }
@@ -59,7 +59,11 @@ public class Bot extends TeamsActivityHandler {
         return action;
     }
 
-
+    /**
+     * Creates a card with buttons for filtering alerts, generating summary by fields, and showing unresolved alerts since N days.
+     *
+     * @return The card with buttons.
+     */
     private Activity cardForFilterAlerts() {
 
         CardAction filterAlertsAction = createButton("Filter Alerts", "filter_alerts");
@@ -78,6 +82,13 @@ public class Bot extends TeamsActivityHandler {
         return activity;
     }
 
+
+
+    /**
+     * Creates a card with buttons for assigning or removing owners for an alert.
+     *
+     * @return The card with buttons.
+     */
     private Activity cardForOwnersHandling() {
         CardAction assign = createButton("Assign Owner", "assign_button");
         CardAction remove= createButton("Remove Owner", "remove_button");
@@ -93,6 +104,14 @@ public class Bot extends TeamsActivityHandler {
         return activity;
     }
 
+
+    /**
+     * Creates a welcome card activity with buttons for refreshing alerts, filtering alerts,
+     * assigning or removing owners for an alert, updating priority, scheduling notification,
+     * and marking an alert as resolved.
+     *
+     * @return The welcome card activity.
+     */
     private Activity createWelcomeCardActivity() {
         CardAction refreshMessages = createButton("Refresh Alerts", "refresh_alerts");
         CardAction filterAlertsExpandAction = createButton("Filter Alerts", "filter_alerts_options");
@@ -118,12 +137,26 @@ public class Bot extends TeamsActivityHandler {
         return activity;
     }
 
+
+    /**
+     * Sends an error message to the user.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     private CompletableFuture<Void> sendErrorMessage(TurnContext turnContext) {
         String replyText = "not able to connect to the server right now";
         Activity replyActivity= MessageFactory.text(replyText);
         return turnContext.sendActivity(replyActivity).thenApply(resourceResponse -> null);
     }
 
+    /**
+     * Handles the sign in user command.
+     *
+     * @param turnContext The turn context.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     private CompletableFuture<Void> signInUserHandler(TurnContext turnContext, String channelId) {
         try {
             if(AuthController.isSignedIn(channelId)) {
@@ -140,6 +173,14 @@ public class Bot extends TeamsActivityHandler {
                 .thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * sets up the user by adding his entry into elastic search index channel_reading_status_index
+     *
+     * @param turnContext The turn context.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     private CompletableFuture<Void> setUpUserHandler(TurnContext turnContext, String channelId) {
         Activity message = turnContext.getActivity();
         String messageText = message.getText();
@@ -176,6 +217,14 @@ public class Bot extends TeamsActivityHandler {
                 .thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Refreshes the data in Elasticsearch.
+     *
+     * @param turnContext The turn context.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     private CompletableFuture<Void> refreshData(TurnContext turnContext, String channelId) {
 
         try {
@@ -198,6 +247,13 @@ public class Bot extends TeamsActivityHandler {
     }
 
 
+
+    /**
+     * Handles the message activity.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
         Activity message = turnContext.getActivity();
         String val = message.getConversation().getId();
@@ -356,6 +412,13 @@ public class Bot extends TeamsActivityHandler {
         return turnContext.sendActivity(replyActivity).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Handles the installation update add event.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that completes when the operation is finished.
+     */
     @Override
     protected CompletableFuture<Void> onInstallationUpdateAdd(TurnContext turnContext) {
         return turnContext.sendActivity(MessageFactory.text("hello thanks for installing the bot")).thenApply(resourceResponse -> null);

@@ -13,15 +13,11 @@ import com.microsoft.bot.integration.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.io.IOException;
-
-
 @SpringBootApplication
 @Import({BotController.class})
 @EnableScheduling
 public class GroupBotApplication extends BotDependencyConfiguration {
-
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		SpringApplication.run(GroupBotApplication.class, args);
 	}
 
@@ -35,5 +31,3 @@ public class GroupBotApplication extends BotDependencyConfiguration {
 		return new AdapterWithErrorHandler(configuration);
 	}
 }
-
-

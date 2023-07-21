@@ -4,10 +4,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
+/**
+ * A class that is used to compare two stacktraces to determine whether they are equal or not
+ *
+ * @author mohammad rehmaan
+ */
+
 public class StackTraceCompare {
     private static final int lineThreshold = 2;
     private static final int refactorFunctionCountThreshold = 2;
     private static final int completeMatchAfterRefactorThreshold = 2;
+
+    /**
+     * Gets the important stack trace elements from the stack trace.
+     *
+     * @param stackTrace The stack trace.
+     * @return The important stack trace elements.
+     * @throws Exception If the stack trace could not be parsed.
+     */
     public static List<StackTraceElement> getImportantStacktraceElements(String stackTrace) throws Exception  {
 
         boolean flag = stackTrace.contains("Caused by");
@@ -61,6 +76,13 @@ public class StackTraceCompare {
         return important;
     }
 
+
+    /**
+     * Gets the exception type from the stack trace.
+     *
+     * @param stackTrace The stack trace.
+     * @return The exception type.
+     */
     private static String getExceptionType(String stackTrace) {
         int index = stackTrace.indexOf("Caused by");
         String str = stackTrace.substring(index);
@@ -98,6 +120,14 @@ public class StackTraceCompare {
         return exception1.equals(exception2);
     }
 
+    /**
+     * Checks if two stack traces are equal.
+     *
+     * @param stackTrace1 The first stack trace.
+     * @param stackTrace2 The second stack trace.
+     * @return True if the stack traces are equal, false otherwise.
+     * @throws Exception If the stack traces could not be parsed.
+     */
     public static Boolean isEqual(String stackTrace1, String stackTrace2) throws Exception {
         if(stackTrace1.contains("Caused") && stackTrace2.contains("Caused")) {
             // compare the two exception types that were thrown

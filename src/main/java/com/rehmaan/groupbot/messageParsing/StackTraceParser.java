@@ -5,6 +5,14 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
+
+/**
+ * A class that parse the stack traces to generate list of stack trace elements
+ *
+ * @author mohammad rehmaan
+ */
+
 public class StackTraceParser {
     // foo.bar.baz(1234.java:5)
     private static String STACK_TRACE_LINE_REGEX = "^\\tat ((?:(?:[\\d\\w]*\\.)*[\\d\\w]*))\\.([\\d\\w\\$]*)\\.([\\d\\w\\$]*)\\((?:(?:([\\d\\w]*\\.java):(\\d*))|([\\d\\w\\s]*))\\)$";
@@ -20,6 +28,13 @@ public class StackTraceParser {
         return parse(builder.substring(0, builder.length() - 1));
     }
 
+    /**
+     * Parses the stack trace string into a StackTrace object.
+     *
+     * @param stackTraceString The stack trace string.
+     * @return The StackTrace object.
+     * @throws Exception If the stack trace string could not be parsed.
+     */
     public static StackTrace parse(String stackTraceString) throws Exception {
         String[] lines = stackTraceString.split("\n");
 

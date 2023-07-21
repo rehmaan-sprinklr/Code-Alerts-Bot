@@ -13,6 +13,14 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+
+
+/**
+ * A class that is used to mark  alerts as resolved.
+ *
+ * @author mohammad rehmaan
+ */
+
 @Component
 public class MarkAsResolvedHandler {
 
@@ -29,8 +37,8 @@ public class MarkAsResolvedHandler {
             return id;
         }
 
-        else if(text.contains("esId:")) {
-            int left = text.indexOf("esId:") + "esId:".length();
+        else if(text.contains("Id:")) {
+            int left = text.indexOf("Id:") + "Id:".length();
             int right = left + lengthOfEsId;
             String id = text.substring(left, right);
             return id;
@@ -38,36 +46,30 @@ public class MarkAsResolvedHandler {
         throw new Exception("invalid input given by user");
     }
 
+
+    /**
+     * Sends a form to the user to allow them to mark an alert as resolved.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendMarkAsResolvedForm(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Mark an alert as resolved\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"messageUrl\",\n" +
-                " \"isRequired\" : true,\n"+
-                " \"errorMessage\": \"Value cannot be empty\",\n" +
-                " \"placeholder\": \"Message URL\"\n" +
-                " }],\n"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath= "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/markAsResolvedAdaptiveCards/inputForm.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath);
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
+
+
+    /**
+     * Marks an alert as resolved.
+     *
+     * @param turnContext The turn context.
+     * @param message The message URL.
+     * @param channelId The channel ID.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> markAsResolved(TurnContext turnContext, String message, String channelId) {
         try {
             String messageId = getId(message);
@@ -91,24 +93,17 @@ public class MarkAsResolvedHandler {
         return turnContext.sendActivity(replyActivity).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Sends an adaptive card to the user to notify them that the alert has been marked as resolved and removed from the database.
+     *
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard() {
         String cardText = "CodeAlertBot 🤖 : Alert is marked as resolved and removed from the database ✅✅";
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
 
 }

@@ -1,0 +1,22 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Unresolved Alerts Since N days",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "Input.Number",
+      "id": "days",
+      "placeholder": "NUMBER_OF_DAYS"
+    }], "actions": [
+  {
+    "type": "Action.Submit",
+    "title": "Send"
+  }
+],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5"
+}

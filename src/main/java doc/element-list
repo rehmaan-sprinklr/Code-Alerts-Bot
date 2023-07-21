@@ -1,0 +1,7 @@
+com.rehmaan.groupbot
+com.rehmaan.groupbot.adaptiveCard
+com.rehmaan.groupbot.authController
+com.rehmaan.groupbot.database
+com.rehmaan.groupbot.incomingActivityHandler
+com.rehmaan.groupbot.messageParsing
+com.rehmaan.groupbot.readAlerts

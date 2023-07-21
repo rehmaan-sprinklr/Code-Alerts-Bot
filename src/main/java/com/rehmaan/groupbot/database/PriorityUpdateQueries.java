@@ -7,14 +7,47 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpRetryException;
+import java.util.Collections;
 
+
+/**
+ * A class that helps to update priorities of keywords in the priority index.
+ *
+ * @author mohammad rehmaan
+ */
 public class PriorityUpdateQueries {
+
+    private static final String priorityIndexName = IndexNames.getPriorityIndexNameIndexName();
+
+    /**
+     * Gets the old priority value for a keyword in the priority index of a channel
+     *
+     * @param keyword The keyword of the priority value to get.
+     * @param documentId The ID of the document to get the priority value for.
+     * @return The old priority value, or 0 if the document does not exist or the keyword is not found.
+     * @throws Exception If an error occurs.
+     */
     public static int getPriorityOldValue(String keyword, String documentId) throws Exception {
-        String endpoint = "http://localhost:9200/" + ESClient.PRIORITY_INDEX_NAME + "/_doc/" + documentId;
+        String endpoint = ElasticSearchRestClient.endPoint + priorityIndexName + "/_doc/" + documentId;
 
         HttpClient httpClient = HttpClients.createDefault();
 
@@ -35,84 +68,137 @@ public class PriorityUpdateQueries {
         return 0;
     }
 
+
+    /**
+     * Gets the ID of the priority map for the specified channel ID.
+     *
+     * @param channelId The channel ID.
+     * @return The ID of the priority map, or null if no priority map exists for the channel ID.
+     * @throws IOException If an I/O error occurs.
+     * @throws ParseException If a parsing error occurs.
+     * @throws HttpRetryException If an HTTP error occurs.
+     */
     public static String getPriorityMapId(String channelId) throws IOException, ParseException, HttpRetryException {
-        String query = "{\n" +
-                "  \"query\" : {\n" +
-                "      \"match\": {\n" +
-                "          \"channelId\" : \"" + channelId + "\"\n" +
-                "      }\n" +
-                "  }\n" +
-                "}";
-        String endpoint = "http://localhost:9200/" + ESClient.PRIORITY_INDEX_NAME + "/_search";
-        JSONObject response= ESClient.sendElasticsearchHttpRequest(query, endpoint);
-        if(response.getJSONObject("hits").getJSONArray("hits").length() == 0) {
-            // add a new map for this channel id and get the id
-            JSONObject priorityMap = new JSONObject();
-            priorityMap.put("channelId", channelId);
-            return ESClient.insertDocument("priority", priorityMap);
+        RestHighLevelClient client = ElasticSearchRestClient.createClient();
+
+        MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("channelId", channelId);
+
+        SearchRequest searchRequest = new SearchRequest(priorityIndexName);
+        searchRequest.source().query(matchQuery);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        if(searchResponse.status().getStatus() != 200) {
+            client.close();
+            throw new HttpRetryException(  "error cannot update priority",searchResponse.status().getStatus());
         }
 
-        return response.getJSONObject("hits").getJSONArray("hits").getJSONObject(0).getString("_id");
-    }
-
-    public static JSONObject getPriorityMap(String channelId) throws IOException, ParseException, HttpRetryException {
-        String query = "{\n" +
-                "  \"query\" : {\n" +
-                "      \"match\": {\n" +
-                "          \"channelId\" : \"" + channelId + "\"\n" +
-                "      }\n" +
-                "  }\n" +
-                "}";
-        String endpoint = "http://localhost:9200/" + ESClient.PRIORITY_INDEX_NAME + "/_search";
-        JSONObject response= ESClient.sendElasticsearchHttpRequest(query, endpoint);
-        if(response.getJSONObject("hits").getJSONArray("hits").length() == 0) {
-            // add a new map for this channel id and get the id
+        if(searchResponse.getHits().getHits().length == 0) {
             JSONObject priorityMap = new JSONObject();
             priorityMap.put("channelId", channelId);
-            ESClient.insertDocument("priority", priorityMap);
+            return ESClient.insertDocument(priorityIndexName, priorityMap);
+        }
+
+        client.close();
+        return searchResponse.getHits().getHits()[0].getId();
+    }
+
+
+    /**
+     * Gets the priority map for the specified channel ID.
+     *
+     * @param channelId The channel ID.
+     * @return The priority map, or an empty JSON object if no priority map exists for the channel ID.
+     * @throws IOException If an I/O error occurs.
+     * @throws ParseException If a parsing error occurs.
+     * @throws HttpRetryException If an HTTP error occurs.
+     */
+    public static JSONObject getPriorityMap(String channelId) throws IOException, ParseException, HttpRetryException {
+        RestHighLevelClient client = ElasticSearchRestClient.createClient();
+
+
+        MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("channelId", channelId);
+
+        SearchRequest searchRequest = new SearchRequest(priorityIndexName);
+        searchRequest.source().query(matchQuery);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        if(searchResponse.status().getStatus() != 200) {
+            client.close();
+            throw new HttpRetryException("error cannot update priority", searchResponse.status().getStatus());
+        }
+        if(searchResponse.getHits().getHits().length == 0) {
+            JSONObject priorityMap = new JSONObject();
+            priorityMap.put("channelId", channelId);
+            ESClient.insertDocument(priorityIndexName, priorityMap);
             return new JSONObject();
         }
-
-        return response.getJSONObject("hits").getJSONArray("hits").getJSONObject(0).getJSONObject("_source");
+        client.close();
+        return new JSONObject(searchResponse.getHits().getHits()[0].getSourceAsString());
     }
 
+
+    /**
+     * Updates the priority of the specified keyword for the specified channel ID.
+     *
+     * @param keyword The keyword to update the priority of.
+     * @param value The new priority value.
+     * @param channelId The channel ID.
+     * @throws Exception If an error occurs.
+     */
     public static void updatePriority(String keyword, int value, String channelId) throws Exception {
-        String documentId =  getPriorityMapId(channelId);
-        String endpoint = "http://localhost:9200/" + ESClient.PRIORITY_INDEX_NAME + "/_update/" + documentId;
+        RestHighLevelClient client = ElasticSearchRestClient.createClient();
+        String documentId = getPriorityMapId(channelId);
         int oldValue = getPriorityOldValue(keyword, documentId);
-
         int delta = value-oldValue;
-        String query = "{\n" +
-                "  \"doc\": {\n" +
-                "    \"" + keyword + "\": \"" + value + "\"\n" +
-                "  }\n" +
-                "}";
 
-        ESClient.sendElasticsearchHttpRequest(query, endpoint);
+        XContentBuilder docBuilder = XContentFactory.jsonBuilder()
+                .startObject()
+                .field(keyword, value)
+                .endObject();
 
-        endpoint = "http://localhost:9200/" + ESClient.CODE_ALERTS_INDEX_NAME + "/_update_by_query";
+        UpdateRequest updateRequest = new UpdateRequest(priorityIndexName, documentId)
+                .doc(docBuilder)
+                .fetchSource(true);
 
-        query = "{\n" +
-                "    \"query\" : {\n" +
-                "        \"bool\" : {\n" +
-                "            \"filter\" : {\n" +
-                "               \"match\": {\"channelId\" : \"" + channelId + "\"}\n" +
-                "            },\n" +
-                "            \"should\" : [\n" +
-                "                {\"match\" : {\"environment\": \"" + keyword + "\"}}, \n" +
-                "                {\"match\" : {\"stackTrace\": \"" + keyword + "\"}}\n" +
-                "            ], \n" +
-                "            \"minimum_should_match\" : 1\n" +
-                "        }\n" +
-                "    }, \n" +
-                "    \"script\" : {\n" +
-                "        \"source\": \"ctx._source.priority += params.value\",\n" +
-                "        \"lang\": \"painless\",\n" +
-                "        \"params\" : {\n" +
-                "            \"value\" : " + delta+ "\n" +
-                "        }\n" +
-                "    }\n" +
-                "}";
-        ESClient.sendElasticsearchHttpRequest(query, endpoint);
+        UpdateResponse updateResponse = client.update(updateRequest, RequestOptions.DEFAULT);
+
+        if(updateResponse.status().getStatus() != 200) {
+            client.close();
+            throw new HttpRetryException( "error cannot update priority", updateResponse.status().getStatus());
+        }
+
+
+        MatchQueryBuilder channelIdMatchQuery = QueryBuilders.matchQuery("channelId", channelId);
+        MatchQueryBuilder environmentMatchQuery = QueryBuilders.matchQuery("environment", keyword);
+        MatchQueryBuilder stackTraceMatchQuery = QueryBuilders.matchQuery("stackTrace", keyword);
+
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                .filter(channelIdMatchQuery)
+                .should(environmentMatchQuery)
+                .should( stackTraceMatchQuery)
+                .minimumShouldMatch(1);
+
+        String script = "ctx._source.priority += params.value";
+
+        UpdateByQueryRequest updateByQueryRequest = new UpdateByQueryRequest("code_alerts_index")
+                .setQuery(boolQuery)
+                .setScript(
+                        new Script(
+                                ScriptType.INLINE,
+                                "painless",
+                                script,
+                                Collections.singletonMap("value", delta)
+                        )
+                );
+
+        BulkByScrollResponse updateByQueryResponse = client.updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);
+        if(updateByQueryResponse.getStatus().hashCode() != 200) {
+            client.close();
+            throw  new HttpRetryException( "error cannot update priority", updateByQueryResponse.getStatus().hashCode());
+        }
+        client.close();
     }
+
 }

@@ -1,0 +1,43 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Filter Alert Form",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "Input.ChoiceSet",
+      "id": "field",
+      "placeholder": "Field_Name",
+      "choices": [ {"title" : "Environment", "value" : "environment"},
+        {"title" : "Partner Id", "value" : "partnerId"},
+        {"title" : "StackTrace keywords", "value" : "stackTrace"}
+      ]
+    , "isRequired": true,
+      "errorMessage": "Field cannot be empty"
+    },
+    {
+      "type": "Input.Text",
+      "id": "value",
+      "isRequired" : true,
+      "errorMessage": "Value cannot be empty",
+      "placeholder": "Value"
+    },
+    {
+      "type": "Input.Number",
+      "id": "days",
+      "placeholder": "Number_of_days",
+      "isRequired" : true,
+      "errorMessage": "Value cannot be empty"
+    }],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Send"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5"
+}

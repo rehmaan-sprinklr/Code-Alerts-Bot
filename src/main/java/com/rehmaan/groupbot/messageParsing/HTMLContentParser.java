@@ -9,8 +9,21 @@ import org.jsoup.select.Elements;
 
 import java.util.HashMap;
 
+
+/**
+ * A class that converts html into Hashmap <key, value>
+ *
+ * @author mohammad rehmaan
+ */
+
 public class HTMLContentParser {
 
+    /**
+     * Gets the stack trace from the HTML message.
+     *
+     * @param str The HTML message.
+     * @return The stack trace.
+     */
     public static String getStackTrace(String str) {
         if(!str.contains("Stacktrace")) {
             return  "";
@@ -21,6 +34,13 @@ public class HTMLContentParser {
         return str.substring(l, r);
     }
 
+
+    /**
+     * Converts the HTML table in the message to a JSON object.
+     *
+     * @param str The HTML message.
+     * @return The JSON object.
+     */
     public static HashMap<String, String> convertHTMLTableToJSON(String str) {
         int startIndex = str.indexOf("<table");
         int endIndex = str.indexOf("</table>");

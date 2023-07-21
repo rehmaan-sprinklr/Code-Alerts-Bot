@@ -12,44 +12,41 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.CompletableFuture;
 
 
+
+/**
+ * A class that updates priority values of some keywords and updates the priority of alerts in the database
+ *
+ * @author mohammad rehmaan
+ */
+
 @Component
 public class UpdatePriorityActivityHandler {
     @Autowired
     ESClient esClient;
+
+    /**
+     * Sends a form to the user to collect the keyword and value for updating the priority of alerts.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendFormForPriorityInput(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Priority Update Form\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Text\",\n" +
-                " \"id\": \"keyword\",\n" +
-                " \"placeholder\": \"KEYWORD\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Number\",\n" +
-                " \"id\": \"value\",\n" +
-                " \"placeholder\": \"VALUE\"\n" +
-                " }],"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/updatePriorityAdaptiveCards/inputForm.json";
+        String adaptiveCardJson= ReadFiles.readFileAsString(filePath);
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
 
+    /**
+     * Updates the priority of an alert based on the keyword and value provided by the user.
+     *
+     * @param keyword The keyword of the alert.
+     * @param value The new priority value.
+     * @param channelId The channel ID.
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> updatePriority(String keyword, int value, String channelId,  TurnContext turnContext) {
         try{
             PriorityUpdateQueries.updatePriority(keyword, value, channelId);
@@ -61,24 +58,18 @@ public class UpdatePriorityActivityHandler {
     }
 
 
+    /**
+     * Sends an adaptive card to the user to show the success message of updating the priority. it replaces the form
+     *
+     * @param keyword The keyword of the alert.
+     * @param value The new priority value.
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard(String keyword, int value) {
         String cardText = "CodeAlertBot 🤖 priority set success ✅ ✅";
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
 
 

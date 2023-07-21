@@ -1,9 +1,7 @@
 package com.rehmaan.groupbot.messageParsing;
 
 
-import com.microsoft.bot.schema.Activity;
 import com.rehmaan.groupbot.database.PriorityUpdateQueries;
-import org.checkerframework.checker.units.qual.A;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -13,7 +11,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
+/**
+ * A class that makes JSON object for each alert
+ *
+ * @author mohammad rehmaan
+ */
+
 public class AlertParser {
+
+    /**
+     * Gets the alert object that has to be inserted in elastic search from the received alert.
+     *
+     * @param alertReceived The received alert.
+     * @return The alert object.
+     * @throws Exception If the stack trace could not be parsed.
+     */
     public static JSONObject getAlertObject(JSONObject alertReceived) throws Exception{
 
         String message = alertReceived.getString("body");
@@ -53,6 +66,14 @@ public class AlertParser {
         return alertObject;
     }
 
+
+    /**
+     * Gets the stack trace for fuzzy search.
+     *
+     * @param stacktrace The stack trace.
+     * @return The stack trace for fuzzy search.
+     * @throws Exception If the stack trace could not be parsed.
+     */
     public static String getStackTraceForFuzzy(String stacktrace) throws Exception{
         List<StackTraceElement> elements = StackTraceParser.parse(stacktrace).getStackTraceLines();
         StringBuilder stringBuilder = new StringBuilder();
@@ -64,6 +85,13 @@ public class AlertParser {
         return stringBuilder.toString();
     }
 
+    /**
+     * Gets the services from the stack trace.
+     *
+     * @param stackTrace The stack trace.
+     * @return The services from the stack trace.
+     * @throws Exception If the stack trace could not be parsed.
+     */
     private static List<String> getServices(String stackTrace) throws Exception {
         List<StackTraceElement> elements = StackTraceParser.parse(stackTrace).getStackTraceLines();
 
@@ -110,7 +138,7 @@ public class AlertParser {
     public static int calculatePriority(String channelId, String stackTrace) throws IOException {
         int priorityValueForAlert=0;
         Map<String, Object> priorityMap = PriorityUpdateQueries.getPriorityMap(channelId).toMap();
-        System.out.println(priorityMap.toString());
+
         for(Map.Entry entry : priorityMap.entrySet()) {
             String key= (String) entry.getKey();
             String value = entry.getValue().toString();
@@ -118,7 +146,6 @@ public class AlertParser {
                 String keyword = key;
                 int priorityValueForKeyword = Integer.parseInt(value);
                 if(stackTrace.contains(keyword)) {
-                    System.out.println("found this keyword " + keyword);
                     priorityValueForAlert += priorityValueForKeyword;
                 }
             }

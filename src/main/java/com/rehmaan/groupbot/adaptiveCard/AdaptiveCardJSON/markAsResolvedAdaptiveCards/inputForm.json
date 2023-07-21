@@ -1,0 +1,25 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Mark an alert as resolved",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "Input.Text",
+      "id": "messageUrl",
+      "isRequired" : true,
+      "errorMessage": "Value cannot be empty",
+      "placeholder": "Message URL"
+    }],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Send"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5"
+}

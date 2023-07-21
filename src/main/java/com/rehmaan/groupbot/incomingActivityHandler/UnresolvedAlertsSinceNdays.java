@@ -15,40 +15,43 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 
+
+/**
+ * A class that handles unresolved alerts since n days commands
+ *
+ * @author mohammad rehmaan
+ */
+
+
 @Component
 public class UnresolvedAlertsSinceNdays {
 
     @Autowired
     ESClient esClient;
 
+
+    /**
+     * Sends a form to the user to collect the number of days for which they want to get the unresolved alerts.
+     *
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> sendFormForDaysInput(TurnContext turnContext) {
-        String adaptiveCardJson= "{\n" +
-                " \"type\": \"AdaptiveCard\",\n" +
-                " \"body\": [\n" +
-                " {\n" +
-                " \"type\": \"TextBlock\",\n" +
-                " \"text\": \"Unresolved Alerts Since N days\",\n" +
-                " \"weight\": \"Bolder\",\n" +
-                " \"size\": \"Medium\"\n" +
-                " },\n" +
-                " {\n" +
-                " \"type\": \"Input.Number\",\n" +
-                " \"id\": \"days\",\n" +
-                " \"placeholder\": \"NUMBER_OF_DAYS\"\n" +
-                " }],"+
-                " \"actions\": [\n" +
-                " {\n" +
-                " \"type\": \"Action.Submit\",\n" +
-                " \"title\": \"Send\"\n" +
-                " }\n" +
-                " ],\n" +
-                " \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                " \"version\": \"1.5\"\n" +
-                "}";
-        Activity reply = AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/unresolvedSinceNDaysAdaptiveCards/inputForm.json";
+        String adaptiveCardJson= ReadFiles.readFileAsString(filePath);
+        Activity reply = AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
         return turnContext.sendActivity(reply).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Gets the unresolved alerts for the specified channel ID and number of days.
+     *
+     * @param channelId The channel ID.
+     * @param days The number of days.
+     * @param turnContext The turn context.
+     * @return A CompletableFuture that will be completed when the message has been sent.
+     */
     public CompletableFuture<Void> getUnresolvedAlertsSinceNdays(String channelId, int days, TurnContext turnContext) {
         List<JSONObject> result = null;
         try {
@@ -60,6 +63,15 @@ public class UnresolvedAlertsSinceNdays {
         return turnContext.sendActivity(createReplyActivity(result, days)).thenApply(resourceResponse -> null);
     }
 
+
+    /**
+     * Creates an adaptive card that summarizes the unresolved alerts for the specified number of days.
+     * render it in a table
+     *
+     * @param result The list of alerts to summarize.
+     * @param days The number of days to summarize the alerts for.
+     * @return The adaptive card.
+     */
     private Activity createReplyActivity(List<JSONObject> result, int days) {
 
         StringBuilder replyBuilder = new StringBuilder();
@@ -91,24 +103,18 @@ public class UnresolvedAlertsSinceNdays {
         return reply;
     }
 
+
+    /**
+     * Sends an adaptive card to the user that replaces the form after submit
+     *
+     * @param days The number of days that were used to filter the alerts.
+     * @return The adaptive card.
+     */
     public Activity sendAfterSubmitCard(int days) {
         String cardText = "CodeAlertBot 🤖 showing Alerts for the last " + days + " days";
-        String adaptiveCardJson = "{\n" +
-                "  \"type\": \"AdaptiveCard\",\n" +
-                "  \"body\": [\n" +
-                "    {\n" +
-                "      \"type\": \"TextBlock\",\n" +
-                "      \"size\": \"medium\",\n" +
-                "      \"weight\": \"bolder\",\n" +
-                "      \"text\":\"" + cardText +  "\",\n" +
-                "      \"style\": \"heading\",\n" +
-                "      \"wrap\": true\n" +
-                "    }" +
-                "   ]," +
-                "  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n" +
-                "  \"version\": \"1.5\"\n" +
-                "}";
-        return AdaptiveCard.createForm(adaptiveCardJson);
+        String filePath = "src/main/java/com/rehmaan/groupbot/adaptiveCard/AdaptiveCardJSON/afterSubmitCard/afterSubmit.json";
+        String adaptiveCardJson = ReadFiles.readFileAsString(filePath).replace("{card-text}", cardText);
+        return AdaptiveCard.createAdaptiveCard(adaptiveCardJson);
     }
 
 }
